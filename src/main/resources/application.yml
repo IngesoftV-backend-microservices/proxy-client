@@ -28,6 +28,10 @@ resilience4j:
         wait-duration-in-open-state: 5s
         sliding-window-type: COUNT_BASED
 
+features:
+  toggles:
+    enhanced-search: ${FEATURE_ENHANCED_SEARCH:true}
+
 management:
   health:
     circuitbreakers:

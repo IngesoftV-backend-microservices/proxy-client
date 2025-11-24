@@ -1,6 +1,7 @@
 package com.selimhorri.app.business.product.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,24 +9,40 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.selimhorri.app.business.product.model.ProductDto;
 import com.selimhorri.app.business.product.model.response.ProductProductServiceCollectionDtoResponse;
 import com.selimhorri.app.business.product.service.ProductClientService;
+import com.selimhorri.app.config.feature.FeatureToggleService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductController {
 	
 	private final ProductClientService productClientService;
+	private final FeatureToggleService featureToggleService;
 	
 	@GetMapping
-	public ResponseEntity<ProductProductServiceCollectionDtoResponse> findAll() {
-		return ResponseEntity.ok(this.productClientService.findAll().getBody());
+	public ResponseEntity<ProductProductServiceCollectionDtoResponse> findAll(
+			@RequestParam(required = false) String search) {
+		
+		ProductProductServiceCollectionDtoResponse response = this.productClientService.findAll().getBody();
+		
+		if (featureToggleService.isFeatureEnabled("enhanced-search") && search != null && !search.isBlank()
+				&& response != null && !CollectionUtils.isEmpty(response.getCollection())) {
+			log.info("Applying enhanced search filter with query: {}", search);
+			response.getCollection().removeIf(product -> product.getProductTitle() == null
+					|| !product.getProductTitle().toLowerCase().contains(search.toLowerCase()));
+		}
+		
+		return ResponseEntity.ok(response);
 	}
 	
 	@GetMapping("/{productId}")
