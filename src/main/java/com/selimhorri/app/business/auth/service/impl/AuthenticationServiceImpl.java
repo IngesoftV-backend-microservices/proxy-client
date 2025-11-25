@@ -43,7 +43,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	
 	@Override
 	public Boolean authenticate(final String jwt) {
-		return null;
+		log.info("** Boolean, authenticate jwt token*\n");
+		try {
+			final String username = this.jwtService.extractUsername(jwt);
+			if (username == null) {
+				return false;
+			}
+			final var userDetails = this.userDetailsService.loadUserByUsername(username);
+			return this.jwtService.validateToken(jwt, userDetails);
+		} catch (Exception e) {
+			log.warn("** JWT validation failed: {}*\n", e.getMessage());
+			return false;
+		}
 	}
 	
 	
